@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "pyconstrainedpacker"
+version = "0.1.0"
+description = "A python prototype for the constrainedpacker"
+authors = ["Eike Fokken <e.fokken+constrainedpacker@posteo.de>"]
+license = "AGPL-3+"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "~3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
