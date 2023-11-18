@@ -11,18 +11,17 @@ class Group:
         name: str,
         demand: float,
         minimal_allocation_factor: float,
-        packages: List[float],
+        number_of_package_sizes: int,
     ) -> None:
         assert demand >= 0
         assert 0 <= minimal_allocation_factor <= 1
-        assert min(*packages) > 0
+        assert number_of_package_sizes >= 1
 
         self.name = name
         self.demand = demand
         self.minimal_allocation_factor = minimal_allocation_factor
-        self.number_of_package_sizes: int = len(packages)
         self.allocations: casadi.MX = casadi.MX.sym(
-            "allocations_" + name, self.number_of_package_sizes
+            "allocations_" + name, number_of_package_sizes
         )
         self.positive_deviation = casadi.MX.sym("positive_deviation" + name)
         self.negative_deviation = casadi.MX.sym("negative_deviation" + name)
@@ -39,6 +38,10 @@ class Group:
         lower_bound_list: List[float] = []
         upper_bound_list: List[float] = []
         constraint_list: List[casadi.MX] = []
+
+        assert packages.size == self.allocations.numel()
+        assert np.min(packages) > 0
+        assert np.all(packages[:-1] <= packages[1:])
 
         # set deviation
         # Note: Deviation is already in positive-negative decomposition.
