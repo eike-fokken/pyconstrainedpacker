@@ -17,14 +17,33 @@ class Group:
         assert 0 <= minimal_allocation_factor <= 1
         assert number_of_package_sizes >= 1
 
-        self.name = name
-        self.demand = demand
-        self.minimal_allocation_factor = minimal_allocation_factor
+        self.name: str = name
+        self.demand: float = demand
+        self.minimal_allocation_factor: float = minimal_allocation_factor
+        self.number_of_package_sizes: int = number_of_package_sizes
+
         self.allocations: casadi.MX = casadi.MX.sym(
-            "allocations_" + name, number_of_package_sizes
+            "allocations_" + name, self.number_of_package_sizes
         )
         self.positive_deviation = casadi.MX.sym("positive_deviation" + name)
         self.negative_deviation = casadi.MX.sym("negative_deviation" + name)
+
+    def declare_variables_and_their_bounds(
+        self,
+    ) -> Tuple[npt.NDArray, casadi.MX, npt.NDArray]:
+        lower_bound_list: List[float] = (2 + self.number_of_package_sizes) * [0.0]
+        upper_bound_list: List[float] = (2 + self.number_of_package_sizes) * [1e20]
+        variable_list: List[casadi.MX] = [
+            self.negative_deviation,
+            self.positive_deviation,
+            self.allocations,
+        ]
+
+        lower_bound = np.array(lower_bound_list)
+        variables = casadi.vertcat(*variable_list)
+        upper_bound = np.array(upper_bound_list)
+
+        return lower_bound, variables, upper_bound
 
     def set_objective(
         self,
