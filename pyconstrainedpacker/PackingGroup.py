@@ -5,7 +5,7 @@ import numpy as np
 import numpy.typing as npt
 
 
-class Group:
+class PackingGroup:
     def __init__(
         self,
         name: str,
