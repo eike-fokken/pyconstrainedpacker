@@ -22,20 +22,40 @@ def allocate(
         package_sizes,
         packages_shipped_per_size,
     )
+
+    total_demand = sum(group_demands)
+    total_supply = sum(
+        [
+            size * number
+            for size, number in zip(package_sizes, packages_shipped_per_size)
+        ]
+    )
+
+    demand_reduction_factor = min(1, total_supply / total_demand)
+
     demand_by_group = dict(zip(group_names, group_demands))
+    reduced_demand_by_group = dict(
+        (key, demand_reduction_factor * value) for key, value in demand_by_group.items()
+    )
+
     shipped_packages_by_size = dict(zip(package_sizes, packages_shipped_per_size))
     groups = [
         PackingGroup(
-            name, demand_by_group[name], minimal_allocation_factor, len(package_sizes)
+            name,
+            reduced_demand_by_group[name],
+            minimal_allocation_factor,
+            len(package_sizes),
         )
-        for name in demand_by_group
+        for name in reduced_demand_by_group
     ]
 
     shipment = ArticleShipment(shipped_packages_by_size)
     variable_data = [group.declare_variables_and_their_bounds() for group in groups]
-    variable_lower_bounds = np.vstack([data[0] for data in variable_data])
+    variable_lower_bounds = np.hstack([data[0] for data in variable_data])
     variables = casadi.vertcat(*[data[1] for data in variable_data])
-    variable_upper_bounds = np.vstack([data[2] for data in variable_data])
+    variable_upper_bounds = np.hstack([data[2] for data in variable_data])
+    discrete_list_of_lists = [data[3] for data in variable_data]
+    discrete = [item for sublist in discrete_list_of_lists for item in sublist]
 
     package_sizes_nparray = np.array(package_sizes)
     group_constraint_data = [
@@ -50,9 +70,41 @@ def allocate(
     constraint_list.append(shipment_constraint_data[1])
     constraint_upper_bounds_list.append(shipment_constraint_data[2])
 
-    constraint_lower_bounds = np.vstack(constraint_lower_bounds_list)
+    # for item in constraint_list:
+    #     print(item)
+    #     print("\n")
+
+    # print(casadi.vertcat(*constraint_list))
+
+    # raise ValueError("AAAA")
+
+    constraint_lower_bounds = np.hstack(constraint_lower_bounds_list)
+
+    print(constraint_lower_bounds)
+
     constraints = casadi.vertcat(*constraint_list)
-    constraint_upper_bounds = np.vstack(constraint_upper_bounds_list)
+    constraint_upper_bounds = np.hstack(constraint_upper_bounds_list)
+
+    objective = sum([group.set_objective() for group in groups])
+
+    problem = {"x": variables, "g": constraints, "f": objective}
+    solver = casadi.qpsol("solver", "highs", problem, {"discrete": discrete})
+
+    x0 = np.zeros(len(groups) * (len(package_sizes) + 2))
+
+    print(f"{x0=}")
+    print(f"{variable_lower_bounds=}")
+    print(f"{variable_upper_bounds=}")
+    print(f"{constraint_lower_bounds=}")
+    print(f"{constraint_upper_bounds=}")
+
+    solver(
+        x0=x0,
+        lbx=variable_lower_bounds,
+        ubx=variable_upper_bounds,
+        lbg=constraint_lower_bounds,
+        ubg=constraint_upper_bounds,
+    )
 
 
 def check_allocate_inputs(

@@ -30,9 +30,10 @@ class PackingGroup:
 
     def declare_variables_and_their_bounds(
         self,
-    ) -> Tuple[npt.NDArray, casadi.MX, npt.NDArray]:
+    ) -> Tuple[npt.NDArray, casadi.MX, npt.NDArray, List[bool]]:
         lower_bound_list: List[float] = (2 + self.number_of_package_sizes) * [0.0]
         upper_bound_list: List[float] = (2 + self.number_of_package_sizes) * [1e20]
+        discrete = [False, False] + self.number_of_package_sizes * [True]
         variable_list: List[casadi.MX] = [
             self.negative_deviation,
             self.positive_deviation,
@@ -43,7 +44,7 @@ class PackingGroup:
         variables = casadi.vertcat(*variable_list)
         upper_bound = np.array(upper_bound_list)
 
-        return lower_bound, variables, upper_bound
+        return lower_bound, variables, upper_bound, discrete
 
     def set_objective(
         self,
