@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import casadi
 import numpy as np
@@ -8,16 +8,12 @@ from .PackingGroup import PackingGroup
 
 
 class ArticleShipment:
-    def __init__(
-        self, package_sizes: List[float], number_of_packages_per_size: List[int]
-    ) -> None:
-        assert len(package_sizes) == len(number_of_packages_per_size)
-        for size in package_sizes:
+    def __init__(self, shipped_packages_by_size: Dict[float, int]) -> None:
+        for size, number in shipped_packages_by_size.items():
             assert size > 0
-        for number in number_of_packages_per_size:
-            assert number > 0
-        self.package_sizes = np.array(package_sizes)
-        self.package_numbers = np.array(number_of_packages_per_size)
+            assert number >= 0
+        self.package_sizes = np.array(shipped_packages_by_size.keys())
+        self.package_numbers = np.array(shipped_packages_by_size.values())
 
     def set_constraints(
         self, groups: List[PackingGroup]
