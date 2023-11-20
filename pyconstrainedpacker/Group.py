@@ -52,29 +52,29 @@ class Group:
 
     def set_constraints(
         self,
-        packages: npt.NDArray,
+        package_sizes: npt.NDArray,
     ) -> Tuple[npt.NDArray, casadi.MX, npt.NDArray]:
         lower_bound_list: List[float] = []
         upper_bound_list: List[float] = []
         constraint_list: List[casadi.MX] = []
 
-        assert packages.size == self.allocations.numel()
-        assert np.min(packages) > 0
-        assert np.all(packages[:-1] <= packages[1:])
+        assert package_sizes.size == self.allocations.numel()
+        assert np.min(package_sizes) > 0
+        assert np.all(package_sizes[:-1] <= package_sizes[1:])
 
         # set deviation
         # Note: Deviation is already in positive-negative decomposition.
         lower_bound_list.append(0)
         constraint_list.append(
             (self.positive_deviation - self.negative_deviation)
-            - (self.demand - casadi.dot(packages, self.allocations))
+            - (self.demand - casadi.dot(package_sizes, self.allocations))
         )
         upper_bound_list.append(0)
 
         # set minimal_allocation
         lower_bound_list.append(0)
         constraint_list.append(
-            casadi.dot(packages, self.allocations)
+            casadi.dot(package_sizes, self.allocations)
             - self.minimal_allocation_factor * self.demand
         )
         upper_bound_list.append(1e20)
