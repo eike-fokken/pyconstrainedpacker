@@ -22,7 +22,12 @@ class Shipment:
     def set_constraints(
         self, groups: List[Group]
     ) -> Tuple[npt.NDArray, casadi.MX, npt.NDArray]:
-        for group in groups:
-            group.allocations
+        """Constrain the allocations to the number of packages available."""
 
-        return np.array([1]), casadi.MX.sym("asdf"), np.array([1])
+        constraints = sum([group.allocations for group in groups])
+
+        return (
+            np.array(len(self.package_sizes) * [-1e20]),
+            constraints,
+            self.package_numbers,
+        )
