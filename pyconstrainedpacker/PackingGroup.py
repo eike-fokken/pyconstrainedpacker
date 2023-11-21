@@ -1,4 +1,5 @@
-from typing import List, Tuple
+from math import fabs
+from typing import Dict, List, Tuple
 
 import casadi
 import numpy as np
@@ -57,7 +58,9 @@ class PackingGroup:
     def set_objective(
         self,
     ) -> casadi.MX:
-        return self.positive_deviation + 1e-5 * self.negative_deviation
+        c = 1
+        alpha = 1e-5
+        return c * self.negative_deviation + alpha * self.positive_deviation
 
     def set_constraints(
         self,
@@ -76,7 +79,7 @@ class PackingGroup:
         lower_bound_list.append(0)
         constraint_list.append(
             (self.positive_deviation - self.negative_deviation)
-            - (self.demand - casadi.dot(package_sizes, self.allocations))
+            - (casadi.dot(package_sizes, self.allocations) - self.demand)
         )
         upper_bound_list.append(0)
 
@@ -96,12 +99,29 @@ class PackingGroup:
 
     def save_variables_in_group(self, values: npt.NDArray) -> None:
         self.deviation_value = values[self.startindex] - values[self.startindex + 1]
-        self.packed_numbers = list(values[self.startindex + 2 : self.endindex])
-        self.packed_numbers = [int(value) for value in self.packed_numbers]
+        for i in range(self.startindex + 2, self.endindex):
+            assert fabs((values[i] - int(round(values[i])))) < 1e-10
+        self.packed_numbers = [
+            int(value) for value in values[self.startindex + 2 : self.endindex]
+        ]
 
     def print_packed_numbers(self, package_sizes: List[float]) -> None:
-        print(f"name: {self.name}")
-        print("Packed units by size:")
+        results = self.create_results_dictionary(package_sizes)
+
+        for key, value in results.items():
+            print(f"{key}: {value}")
+        # print(f"name: {self.name}")
+        # print("Packed units by size:")
+        # for i in range(len(package_sizes)):
+        #     print(f"{package_sizes[i]}: {self.packed_numbers[i]}")
+        # print(f"Deviation: {self.deviation_value}")
+
+    def create_results_dictionary(
+        self, package_sizes: List[float]
+    ) -> Dict[str | float, str | float | int]:
+        results_json: Dict[str | float, str | float | int] = dict()
+        results_json["name"] = self.name
         for i in range(len(package_sizes)):
-            print(f"{package_sizes[i]}: {self.packed_numbers[i]}")
-        print(f"Deviation: {self.deviation_value}")
+            results_json[package_sizes[i]] = self.packed_numbers[i]
+        results_json["deviation"] = self.deviation_value
+        return results_json
