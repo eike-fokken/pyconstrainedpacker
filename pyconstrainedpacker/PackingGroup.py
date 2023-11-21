@@ -27,12 +27,19 @@ class PackingGroup:
         )
         self.positive_deviation = casadi.MX.sym("positive_deviation" + name)
         self.negative_deviation = casadi.MX.sym("negative_deviation" + name)
+        self.startindex: int
+        self.endindex: int
+
+        self.deviation_value: float = 1e20
+        self.packed_numbers: List[float] = []
 
     def declare_variables_and_their_bounds(
-        self,
-    ) -> Tuple[npt.NDArray, casadi.MX, npt.NDArray, List[bool]]:
-        lower_bound_list: List[float] = (2 + self.number_of_package_sizes) * [0.0]
-        upper_bound_list: List[float] = (2 + self.number_of_package_sizes) * [1e20]
+        self, startindex: int
+    ) -> Tuple[npt.NDArray, casadi.MX, npt.NDArray, List[bool], int]:
+        self.startindex = startindex
+        number_of_variables = 2 + self.number_of_package_sizes
+        lower_bound_list: List[float] = (number_of_variables) * [0.0]
+        upper_bound_list: List[float] = (number_of_variables) * [1e20]
         discrete = [False, False] + self.number_of_package_sizes * [True]
         variable_list: List[casadi.MX] = [
             self.negative_deviation,
@@ -44,12 +51,13 @@ class PackingGroup:
         variables = casadi.vertcat(*variable_list)
         upper_bound = np.array(upper_bound_list)
 
-        return lower_bound, variables, upper_bound, discrete
+        self.endindex = startindex + number_of_variables
+        return (lower_bound, variables, upper_bound, discrete, self.endindex)
 
     def set_objective(
         self,
     ) -> casadi.MX:
-        return self.positive_deviation
+        return self.positive_deviation + 1e-5 * self.negative_deviation
 
     def set_constraints(
         self,
@@ -85,3 +93,15 @@ class PackingGroup:
         upper_bound = np.array(upper_bound_list)
 
         return lower_bound, constraints, upper_bound
+
+    def save_variables_in_group(self, values: npt.NDArray) -> None:
+        self.deviation_value = values[self.startindex] - values[self.startindex + 1]
+        self.packed_numbers = list(values[self.startindex + 2 : self.endindex])
+        self.packed_numbers = [int(value) for value in self.packed_numbers]
+
+    def print_packed_numbers(self, package_sizes: List[float]) -> None:
+        print(f"name: {self.name}")
+        print("Packed units by size:")
+        for i in range(len(package_sizes)):
+            print(f"{package_sizes[i]}: {self.packed_numbers[i]}")
+        print(f"Deviation: {self.deviation_value}")

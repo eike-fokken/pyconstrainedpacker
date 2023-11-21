@@ -2,4 +2,5 @@
 max-line-length = 99
 exclude=__init__.py
 extend-ignore=
-  D
+  D,
+  E203

@@ -1,8 +1,9 @@
 from collections import OrderedDict
-from typing import List
+from typing import List, Tuple
 
 import casadi
 import numpy as np
+import numpy.typing as npt
 
 from .ArticleShipment import ArticleShipment
 from .PackingGroup import PackingGroup
@@ -39,7 +40,7 @@ def allocate(
     )
 
     shipped_packages_by_size = dict(zip(package_sizes, packages_shipped_per_size))
-    groups = [
+    groups: List[PackingGroup] = [
         PackingGroup(
             name,
             reduced_demand_by_group[name],
@@ -50,7 +51,12 @@ def allocate(
     ]
 
     shipment = ArticleShipment(shipped_packages_by_size)
-    variable_data = [group.declare_variables_and_their_bounds() for group in groups]
+    startindex = 0
+    variable_data: List[Tuple[npt.NDArray, casadi.MX, npt.NDArray, List[bool]]] = []
+    for group in groups:
+        datum = group.declare_variables_and_their_bounds(startindex)
+        startindex = datum[4]
+        variable_data.append((datum[0], datum[1], datum[2], datum[3]))
     variable_lower_bounds = np.hstack([data[0] for data in variable_data])
     variables = casadi.vertcat(*[data[1] for data in variable_data])
     variable_upper_bounds = np.hstack([data[2] for data in variable_data])
@@ -98,13 +104,23 @@ def allocate(
     print(f"{constraint_lower_bounds=}")
     print(f"{constraint_upper_bounds=}")
 
-    solver(
-        x0=x0,
-        lbx=variable_lower_bounds,
-        ubx=variable_upper_bounds,
-        lbg=constraint_lower_bounds,
-        ubg=constraint_upper_bounds,
-    )
+    try:
+        result = solver(
+            x0=x0,
+            lbx=variable_lower_bounds,
+            ubx=variable_upper_bounds,
+            lbg=constraint_lower_bounds,
+            ubg=constraint_upper_bounds,
+        )
+    except Exception as e:
+        print(type(e))
+        print(e)
+        print()
+    else:
+        for group in groups:
+            group.save_variables_in_group(np.array(result["x"]).flatten())
+        for group in groups:
+            group.print_packed_numbers(package_sizes)
 
 
 def check_allocate_inputs(

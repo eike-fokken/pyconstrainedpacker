@@ -16,7 +16,8 @@ def test_simple_run() -> None:
     group_names = ["One", "Two", "Three"]
     group_demands = [4832.0, 5923.0, 6981.0]
 
-    minimal_allocation_factor = 0.8
+    # minimal_allocation_factor = 1.0
+    minimal_allocation_factor = 0.9
     package_sizes = list(shipment_dict.keys())
     packages_shipped_per_size = list(shipment_dict.values())
 
