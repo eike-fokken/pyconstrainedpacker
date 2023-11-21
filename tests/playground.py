@@ -13,7 +13,8 @@
 
 # print(d)
 import casadi
-import numpy as np
+
+# import numpy as np
 
 x = casadi.MX.sym("x")
 
