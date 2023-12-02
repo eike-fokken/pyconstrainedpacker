@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from typing import List, Tuple
 
 import casadi
@@ -134,7 +133,7 @@ def check_allocate_inputs(
         name for name in group_names if group_names.count(name) > 1
     ]
     if len(multiply_defined_names_raw) > 0:
-        multiply_defined_names = list(OrderedDict.fromkeys(multiply_defined_names_raw))
+        multiply_defined_names = list(dict.fromkeys(multiply_defined_names_raw))
         error_message = (
             "Group names are not unique!"
             + "Multiply defined group names are:"
