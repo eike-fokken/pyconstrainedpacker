@@ -133,6 +133,6 @@ class PackingGroup:
             results_json[package_sizes[i]] = self.packed_numbers[i]
         results_json["deviation"] = round(self.deviation_value, 0)
         results_json["relative_satisfaction"] = (
-            1 - results_json["deviation"] / results_json["demand"]
+            1 + results_json["deviation"] / results_json["demand"]
         )
         return results_json

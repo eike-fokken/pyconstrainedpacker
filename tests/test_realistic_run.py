@@ -16,15 +16,14 @@ def test_simple_run() -> None:
     total_demand = total_head_count * demand_per_person
     print(f"{total_demand=}")
     shipment_dict = {
-        250.0: 800,
-        1000.0: 200,
+        250.0: 200,
+        1000.0: 100,
     }
 
     total_supply = sum([size * value for size, value in shipment_dict.items()])
     print(f"{total_supply=}")
 
-    # minimal_allocation_factor = 1.0
-    minimal_allocation_factor = 0.97
+    minimal_allocation_factor = 0.92
     package_sizes = list(shipment_dict.keys())
     packages_shipped_per_size = list(shipment_dict.values())
 
