@@ -1,5 +1,3 @@
-from typing import List, Tuple
-
 import casadi
 import numpy as np
 import numpy.typing as npt
@@ -9,11 +7,11 @@ from .PackingGroup import PackingGroup
 
 
 def allocate(
-    group_names: List[str],
-    group_demands: List[float],
+    group_names: list[str],
+    group_demands: list[float],
     minimal_allocation_factor: float,
-    package_sizes: List[float],
-    packages_shipped_per_size: List[int],
+    package_sizes: list[float],
+    packages_shipped_per_size: list[int],
 ) -> None:
     check_allocate_inputs(
         group_names,
@@ -33,25 +31,26 @@ def allocate(
 
     demand_reduction_factor = min(1, total_supply / total_demand)
 
-    demand_by_group = dict(zip(group_names, group_demands))
-    reduced_demand_by_group = dict(
-        (key, demand_reduction_factor * value) for key, value in demand_by_group.items()
-    )
+    map_group_name_to_demand = dict(zip(group_names, group_demands))
+    map_group_name_to_reduced_demand = {
+        name: demand_reduction_factor * demand
+        for name, demand in map_group_name_to_demand.items()
+    }
 
     shipped_packages_by_size = dict(zip(package_sizes, packages_shipped_per_size))
-    groups: List[PackingGroup] = [
+    groups: list[PackingGroup] = [
         PackingGroup(
             name,
-            reduced_demand_by_group[name],
+            map_group_name_to_reduced_demand[name],
             minimal_allocation_factor,
             len(package_sizes),
         )
-        for name in reduced_demand_by_group
+        for name in map_group_name_to_reduced_demand
     ]
 
     shipment = ArticleShipment(shipped_packages_by_size)
     startindex = 0
-    variable_data: List[Tuple[npt.NDArray, casadi.MX, npt.NDArray, List[bool]]] = []
+    variable_data: list[tuple[npt.NDArray, casadi.MX, npt.NDArray, list[bool]]] = []
     for group in groups:
         datum = group.declare_variables_and_their_bounds(startindex)
         startindex = datum[4]
@@ -74,14 +73,6 @@ def allocate(
     constraint_lower_bounds_list.append(shipment_constraint_data[0])
     constraint_list.append(shipment_constraint_data[1])
     constraint_upper_bounds_list.append(shipment_constraint_data[2])
-
-    # for item in constraint_list:
-    #     print(item)
-    #     print("\n")
-
-    # print(casadi.vertcat(*constraint_list))
-
-    # raise ValueError("AAAA")
 
     constraint_lower_bounds = np.hstack(constraint_lower_bounds_list)
 
@@ -120,26 +111,27 @@ def allocate(
             group.save_variables_in_group(np.array(result["x"]).flatten())
         for group in groups:
             group.print_packed_numbers(package_sizes)
+            print("")
 
 
 def check_allocate_inputs(
-    group_names: List[str],
-    group_demands: List[float],
+    group_names: list[str],
+    group_demands: list[float],
     minimal_allocation_factor: float,
-    package_sizes: List[float],
-    packages_shipped_per_size: List[int],
+    package_sizes: list[float],
+    packages_shipped_per_size: list[int],
 ) -> None:
-    multiply_defined_names_raw = [
+    multiply_defined_names = {
         name for name in group_names if group_names.count(name) > 1
-    ]
-    if len(multiply_defined_names_raw) > 0:
-        multiply_defined_names = list(dict.fromkeys(multiply_defined_names_raw))
+    }
+    if len(multiply_defined_names) > 0:
         error_message = (
             "Group names are not unique!"
             + "Multiply defined group names are:"
             + "\n".join(multiply_defined_names)
         )
         raise ValueError(error_message)
+
     if len(group_demands) != len(group_names):
         raise ValueError("Mismatch in number of group names and group demands!")
 

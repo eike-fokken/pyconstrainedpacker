@@ -13,7 +13,7 @@ class ArticleShipment:
             assert size > 0
             assert number >= 0
         self.package_sizes = np.array(list(shipped_packages_by_size.keys()))
-        self.package_numbers = np.array(list(shipped_packages_by_size.values()))
+        self.package_count = np.array(list(shipped_packages_by_size.values()))
 
     def set_constraints(
         self, groups: List[PackingGroup]
@@ -25,5 +25,5 @@ class ArticleShipment:
         return (
             np.array(self.package_sizes.size * [0]),
             constraints,
-            self.package_numbers,
+            self.package_count,
         )

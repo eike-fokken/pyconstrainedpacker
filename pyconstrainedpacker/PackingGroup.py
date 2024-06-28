@@ -1,5 +1,4 @@
 from math import fabs
-from typing import Dict, List, Tuple
 
 import casadi
 import numpy as np
@@ -32,17 +31,17 @@ class PackingGroup:
         self.endindex: int
 
         self.deviation_value: float = 1e20
-        self.packed_numbers: List[float] = []
+        self.packed_numbers: list[float] = []
 
     def declare_variables_and_their_bounds(
         self, startindex: int
-    ) -> Tuple[npt.NDArray, casadi.MX, npt.NDArray, List[bool], int]:
+    ) -> tuple[npt.NDArray, casadi.MX, npt.NDArray, list[bool], int]:
         self.startindex = startindex
         number_of_variables = 2 + self.number_of_package_sizes
-        lower_bound_list: List[float] = (number_of_variables) * [0.0]
-        upper_bound_list: List[float] = (number_of_variables) * [1e20]
+        lower_bound_list: list[float] = (number_of_variables) * [0.0]
+        upper_bound_list: list[float] = (number_of_variables) * [1e20]
         discrete = [False, False] + self.number_of_package_sizes * [True]
-        variable_list: List[casadi.MX] = [
+        variable_list: list[casadi.MX] = [
             self.negative_deviation,
             self.positive_deviation,
             self.allocations,
@@ -65,10 +64,10 @@ class PackingGroup:
     def set_constraints(
         self,
         package_sizes: npt.NDArray,
-    ) -> Tuple[npt.NDArray, casadi.MX, npt.NDArray]:
-        lower_bound_list: List[float] = []
-        upper_bound_list: List[float] = []
-        constraint_list: List[casadi.MX] = []
+    ) -> tuple[npt.NDArray, casadi.MX, npt.NDArray]:
+        lower_bound_list: list[float] = []
+        upper_bound_list: list[float] = []
+        constraint_list: list[casadi.MX] = []
 
         assert package_sizes.size == self.allocations.numel()
         assert np.min(package_sizes) > 0
@@ -76,6 +75,7 @@ class PackingGroup:
 
         # set deviation
         # Note: Deviation is already in positive-negative decomposition.
+
         lower_bound_list.append(0)
         constraint_list.append(
             (self.positive_deviation - self.negative_deviation)
@@ -97,31 +97,42 @@ class PackingGroup:
 
         return lower_bound, constraints, upper_bound
 
-    def save_variables_in_group(self, values: npt.NDArray) -> None:
-        self.deviation_value = values[self.startindex] - values[self.startindex + 1]
+    def save_variables_in_group(self, all_computed_values: npt.NDArray) -> None:
+        self.deviation_value = (
+            all_computed_values[self.startindex + 1]
+            - all_computed_values[self.startindex]
+        )
+        assert (
+            all_computed_values[self.startindex + 1] < 1e-3
+            or all_computed_values[self.startindex] < 1e-3
+        )
+
         for i in range(self.startindex + 2, self.endindex):
-            assert fabs((values[i] - int(round(values[i])))) < 1e-10
+            assert (
+                fabs((all_computed_values[i] - int(round(all_computed_values[i]))))
+                < 1e-10
+            )
         self.packed_numbers = [
-            int(value) for value in values[self.startindex + 2 : self.endindex]
+            int(value)
+            for value in all_computed_values[self.startindex + 2 : self.endindex]
         ]
 
-    def print_packed_numbers(self, package_sizes: List[float]) -> None:
+    def print_packed_numbers(self, package_sizes: list[float]) -> None:
         results = self.create_results_dictionary(package_sizes)
 
         for key, value in results.items():
             print(f"{key}: {value}")
-        # print(f"name: {self.name}")
-        # print("Packed units by size:")
-        # for i in range(len(package_sizes)):
-        #     print(f"{package_sizes[i]}: {self.packed_numbers[i]}")
-        # print(f"Deviation: {self.deviation_value}")
 
     def create_results_dictionary(
-        self, package_sizes: List[float]
-    ) -> Dict[str | float, str | float | int]:
-        results_json: Dict[str | float, str | float | int] = dict()
+        self, package_sizes: list[float]
+    ) -> dict[str | float, str | float | int]:
+        results_json: dict[str | float, str | float | int] = {}
         results_json["name"] = self.name
+        results_json["demand"] = self.demand
         for i in range(len(package_sizes)):
             results_json[package_sizes[i]] = self.packed_numbers[i]
-        results_json["deviation"] = self.deviation_value
+        results_json["deviation"] = round(self.deviation_value, 0)
+        results_json["relative_satisfaction"] = (
+            1 - results_json["deviation"] / results_json["demand"]
+        )
         return results_json
