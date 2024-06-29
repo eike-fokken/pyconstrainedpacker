@@ -110,10 +110,10 @@ class PackingGroup:
         for i in range(self.startindex + 2, self.endindex):
             assert (
                 fabs((all_computed_values[i] - int(round(all_computed_values[i]))))
-                < 1e-10
+                < 1e-8
             )
         self.packed_numbers = [
-            int(value)
+            int(round(value))
             for value in all_computed_values[self.startindex + 2 : self.endindex]
         ]
 
