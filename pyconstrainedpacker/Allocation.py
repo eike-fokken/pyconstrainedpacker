@@ -113,6 +113,12 @@ def allocate(
             group.print_packed_numbers(package_sizes)
             print("")
 
+    worst_relative_demand_violation = min(
+        [group.deviation_value / group.demand for group in groups]
+    )
+
+    print(f"Worst demand violation: {1+worst_relative_demand_violation}")
+
 
 def check_allocate_inputs(
     group_names: list[str],
