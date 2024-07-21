@@ -13,7 +13,11 @@ class PackingGroup:
         minimal_allocation_factor: float,
         number_of_package_sizes: int,
     ) -> None:
-        assert demand >= 0
+
+        if demand < 0:
+            raise RuntimeError(
+                f"The group called >>{name}<< has demand {demand}<0. This prohibited!"
+            )
         assert 0 <= minimal_allocation_factor <= 1
         assert number_of_package_sizes >= 1
 
@@ -125,14 +129,15 @@ class PackingGroup:
 
     def create_results_dictionary(
         self, package_sizes: list[float]
-    ) -> dict[str | float, str | float | int]:
-        results_json: dict[str | float, str | float | int] = {}
+    ) -> dict[str, str | float | int]:
+        results_json: dict[str, str | float | int] = {}
         results_json["name"] = self.name
         results_json["demand"] = self.demand
         for i in range(len(package_sizes)):
-            results_json[package_sizes[i]] = self.packed_numbers[i]
+            results_json[str(package_sizes[i])] = self.packed_numbers[i]
         results_json["deviation"] = round(self.deviation_value, 0)
-        results_json["relative_satisfaction"] = (
-            1 + results_json["deviation"] / results_json["demand"]
+
+        results_json["relative_satisfaction"] = 1 + self.deviation_value / (
+            self.demand + 0.001
         )
         return results_json

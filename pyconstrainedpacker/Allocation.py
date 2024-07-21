@@ -154,7 +154,7 @@ def check_allocate_inputs(
     if minimal_allocation_factor < 0 or minimal_allocation_factor > 1:
         raise ValueError(
             "Minimal allocation factor must"
-            + f" lie between 0 and one, but got: {minimal_allocation_factor}"
+            + f" lie between 0 and one, but it was: {minimal_allocation_factor}."
         )
 
     if len(package_sizes) != len(packages_shipped_per_size):

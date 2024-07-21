@@ -1,4 +1,4 @@
-from pyconstrainedpacker import ArticleShipment, PackingGroup, allocate
+from pyconstrainedpacker import allocate
 from pyconstrainedpacker.MockDemand import create_groups, make_demands_from_groups
 
 
