@@ -116,8 +116,10 @@ def allocate(
     worst_relative_demand_violation = min(
         [group.deviation_value / group.demand for group in groups]
     )
+    worst_absolute_demand_violation = min([group.deviation_value for group in groups])
 
-    print(f"Worst demand violation: {1+worst_relative_demand_violation}")
+    print(f"Worst relative demand violation: {worst_relative_demand_violation}")
+    print(f"Worst absolute demand violation: {worst_absolute_demand_violation}")
 
 
 def check_allocate_inputs(
